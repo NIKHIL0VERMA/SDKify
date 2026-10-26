@@ -154,3 +154,55 @@ function toTypeScriptLiteral(
 
   return String(value);
 }
+
+export function getTypeDependencies(
+  type: TypeReference,
+): string[] {
+  const dependencies = new Set<string>();
+
+  collectTypeDependencies(type, dependencies);
+
+  return [...dependencies];
+}
+
+function collectTypeDependencies(
+  type: TypeReference,
+  dependencies: Set<string>,
+): void {
+  switch (type.kind) {
+    case "model":
+      dependencies.add(type.name);
+      return;
+
+    case "array":
+      collectTypeDependencies(
+        type.items,
+        dependencies,
+      );
+      return;
+
+    case "object":
+      for (const property of type.properties) {
+        collectTypeDependencies(
+          property.type,
+          dependencies,
+        );
+      }
+      return;
+
+    case "union":
+    case "intersection":
+      for (const variant of type.variants) {
+        collectTypeDependencies(
+          variant,
+          dependencies,
+        );
+      }
+      return;
+
+    case "primitive":
+    case "enum":
+    case "unknown":
+      return;
+  }
+}

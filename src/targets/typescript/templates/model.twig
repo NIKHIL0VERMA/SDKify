@@ -1,0 +1,23 @@
+{% for dependency in dependencies %}
+import type { {{ dependency.name }} } from "./{{ dependency.fileName }}.js";
+{% endfor %}
+{% if dependencies is not empty %}
+
+{% endif %}
+{% if description %}
+/**
+ * {{ description }}
+ */
+{% endif %}
+{% if kind == "interface" %}
+export interface {{ name }}{% if parents is not empty %} extends {{ parents | join(", ") }}{% endif %} {
+{% for property in properties %}
+{% if property.description %}
+  /** {{ property.description }} */
+{% endif %}
+  {{ property.name }}{% if not property.required %}?{% endif %}: {{ property.tsType }};
+{% endfor %}
+}
+{% else %}
+export type {{ name }} = {{ tsType }};
+{% endif %}
