@@ -1,5 +1,6 @@
 import { parseOpenAPI } from "./parser/openapi.js";
 import { normalizeOpenAPI } from "./canonical/normalizer.js";
+import { generateTypeScript } from "./targets/typescript/generator.js";
 
 const path = process.argv[2];
 
@@ -11,23 +12,34 @@ if (!path) {
 const document = await parseOpenAPI(path);
 const spec = normalizeOpenAPI(document);
 
-console.log(`\n${spec.name} v${spec.version}`);
-console.log("=".repeat(60));
+await generateTypeScript(
+  spec,
+  "generated/typescript/src",
+);
 
-let operationCount = 0;
+console.dir(spec.auth, {
+  depth: null,
+});
 
-for (const service of spec.services) {
-  console.log(`\n${service.name}`);
+const names = new Set([
+  "InboxEmbedCreated",
+  "SetupLinkCreated",
+]);
 
-  for (const operation of service.operations) {
-    operationCount++;
+console.dir(
+  spec.types.filter((type) =>
+    names.has(type.name),
+  ),
+  {
+    depth: null,
+  },
+  
+);
 
-    console.log(
-      `  ${operation.method.padEnd(7)} ${operation.name.padEnd(30)} ${operation.path}`,
-    );
-  }
-}
+const customers = spec.services.find(
+  (service) => service.name === "Customers",
+);
 
-console.log("\n" + "=".repeat(60));
-console.log(`Services:   ${spec.services.length}`);
-console.log(`Operations: ${operationCount}`);
+console.dir(customers, {
+  depth: null,
+});

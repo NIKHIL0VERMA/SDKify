@@ -14,6 +14,32 @@ export interface SDKSpec {
 
   servers: Server[];
   services: Service[];
+  types: NamedType[];
+  auth: AuthScheme[];
+}
+
+export type AuthScheme =
+  | ApiKeyAuth
+  | HttpAuth;
+
+export interface ApiKeyAuth {
+  kind: "apiKey";
+  name: string;
+  wireName: string;
+  location: "header" | "query" | "cookie";
+}
+
+export interface HttpAuth {
+  kind: "http";
+  name: string;
+  scheme: string;
+  bearerFormat?: string;
+}
+
+export interface NamedType {
+  name: string;
+  description?: string;
+  type: TypeReference;
 }
 
 export interface Server {
@@ -82,11 +108,21 @@ export type TypeReference =
   | PrimitiveType
   | ModelType
   | ArrayType
+  | ObjectType
+  | EnumType
+  | UnionType
+  | IntersectionType
   | UnknownType;
 
 export interface PrimitiveType {
   kind: "primitive";
   type: "string" | "number" | "integer" | "boolean";
+  nullable?: boolean;
+}
+
+export interface IntersectionType {
+  kind: "intersection";
+  variants: TypeReference[];
   nullable?: boolean;
 }
 
@@ -102,6 +138,31 @@ export interface ArrayType {
   nullable?: boolean;
 }
 
+export interface ObjectType {
+  kind: "object";
+  properties: ObjectProperty[];
+  nullable?: boolean;
+}
+
+export interface ObjectProperty {
+  name: string;
+  wireName: string;
+  required: boolean;
+  type: TypeReference;
+}
+
 export interface UnknownType {
   kind: "unknown";
+}
+
+export interface EnumType {
+  kind: "enum";
+  values: Array<string | number | boolean>;
+  nullable?: boolean;
+}
+
+export interface UnionType {
+  kind: "union";
+  variants: TypeReference[];
+  nullable?: boolean;
 }

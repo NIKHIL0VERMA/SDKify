@@ -11,7 +11,6 @@ export function normalizeSchema(
     };
   }
 
-  // $ref
   if (typeof schema.$ref === "string") {
     return {
       kind: "model",
@@ -19,8 +18,36 @@ export function normalizeSchema(
     };
   }
 
-  // OpenAPI 3.1:
-  // type: ["string", "null"]
+  if (Array.isArray(schema.enum)) {
+    const values = schema.enum.filter(
+      (
+        value,
+      ): value is string | number | boolean =>
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean",
+    );
+
+    if (values.length > 0) {
+      return {
+        kind: "enum",
+        values,
+      };
+    }
+  }
+
+  if (Array.isArray(schema.oneOf)) {
+    return normalizeUnion(schema.oneOf);
+  }
+
+  if (Array.isArray(schema.anyOf)) {
+    return normalizeUnion(schema.anyOf);
+  }
+
+  if (Array.isArray(schema.allOf)) {
+    return normalizeIntersection(schema.allOf);
+  }
+
   if (Array.isArray(schema.type)) {
     const types = schema.type.filter(
       (type): type is string => typeof type === "string",
@@ -79,6 +106,9 @@ export function normalizeSchema(
         ),
       };
 
+    case "object":
+      return normalizeObjectSchema(schema);
+
     default:
       return {
         kind: "unknown",
@@ -104,4 +134,146 @@ function isRecord(
     value !== null &&
     !Array.isArray(value)
   );
+}
+
+function normalizeObjectSchema(
+  schema: Record<string, unknown>,
+): TypeReference {
+  if (!isRecord(schema.properties)) {
+    return {
+      kind: "object",
+      properties: [],
+    };
+  }
+
+  const required = new Set(
+    Array.isArray(schema.required)
+      ? schema.required.filter(
+        (value): value is string =>
+          typeof value === "string",
+      )
+      : [],
+  );
+
+  const properties = Object.entries(
+    schema.properties,
+  )
+    .filter(
+      (
+        entry,
+      ): entry is [
+        string,
+        Record<string, unknown>,
+      ] => isRecord(entry[1]),
+    )
+    .map(([wireName, property]) => ({
+      name: camelCase(wireName),
+      wireName,
+      required: required.has(wireName),
+      type: normalizeSchema(property),
+    }));
+
+  return {
+    kind: "object",
+    properties,
+  };
+}
+
+function camelCase(value: string): string {
+  return value.replace(
+    /[_-]+([a-zA-Z0-9])/g,
+    (_, character: string) =>
+      character.toUpperCase(),
+  );
+}
+
+function normalizeUnion(
+  schemas: unknown[],
+): TypeReference {
+  let nullable = false;
+
+  const variants: TypeReference[] = [];
+
+  for (const schema of schemas) {
+    if (!isRecord(schema)) {
+      continue;
+    }
+
+    if (schema.type === "null") {
+      nullable = true;
+      continue;
+    }
+
+    variants.push(normalizeSchema(schema));
+  }
+
+  if (variants.length === 0) {
+    return {
+      kind: "unknown",
+    };
+  }
+
+  if (variants.length === 1) {
+    const variant = variants[0];
+
+    if (!variant) {
+      return {
+        kind: "unknown",
+      };
+    }
+
+    if (variant.kind === "unknown") {
+      return variant;
+    }
+
+    if (!nullable) {
+      return variant;
+    }
+
+    return {
+      ...variant,
+      nullable: true,
+    };
+  }
+
+  return {
+    kind: "union",
+    variants,
+    nullable: nullable || undefined,
+  };
+}
+
+function normalizeIntersection(
+  schemas: unknown[],
+): TypeReference {
+  const variants = schemas
+    .filter(isRecord)
+    .map(normalizeSchema)
+    .filter(
+      (type): type is Exclude<TypeReference, { kind: "unknown" }> =>
+        type.kind !== "unknown",
+    );
+
+  if (variants.length === 0) {
+    return {
+      kind: "unknown",
+    };
+  }
+
+  if (variants.length === 1) {
+    const variant = variants[0];
+
+    if (!variant) {
+      return {
+        kind: "unknown",
+      };
+    }
+
+    return variant;
+  }
+
+  return {
+    kind: "intersection",
+    variants,
+  };
 }

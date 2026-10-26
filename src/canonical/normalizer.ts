@@ -1,8 +1,14 @@
 import type { OpenAPI } from "@scalar/openapi-types";
 
+// normalizers
+import { normalizeParameter } from "./parameter.js";
+import { normalizeRequestBody } from "./request.js";
+import { normalizeResponse } from "./response.js";
+import { normalizeNamedTypes } from "./named-type.js";
+import { normalizeAuth } from "./auth.js";
+
 import type {
   HttpMethod,
-  Operation,
   SDKSpec,
   Service,
 } from "./types.js";
@@ -70,18 +76,45 @@ export function normalizeOpenAPI(
         services.set(serviceName, service);
       }
 
-        service.operations.push({
-            name: deriveOperationName(operationId, serviceName),
-            operationId,
-            method: method.toUpperCase() as HttpMethod,
-            path,
-            summary: operation.summary,
-            description: operation.description,
-            parameters: [],
-        });
+      const parameters = [
+        ...(pathItem.parameters ?? []),
+        ...(operation.parameters ?? []),
+      ]
+        .filter(
+          (parameter): parameter is Record<string, unknown> =>
+            typeof parameter === "object" &&
+            parameter !== null &&
+            !Array.isArray(parameter),
+        )
+        .map(normalizeParameter);
+
+      service.operations.push({
+        name: deriveOperationName(operationId, serviceName),
+        operationId,
+        method: method.toUpperCase() as HttpMethod,
+        path,
+        summary: operation.summary,
+        description: operation.description,
+        parameters,
+        requestBody: normalizeRequestBody(
+          operation.requestBody,
+        ),
+        response: normalizeResponse(
+          operation.responses,
+        ),
+      });
     }
   }
 
+  const components =
+    "components" in document
+      ? document.components
+      : undefined;
+
+  const schemas = components?.schemas;
+
+  const securitySchemes = components?.securitySchemes;
+  
   return {
     name: document.info.title,
     version: document.info.version,
@@ -90,12 +123,14 @@ export function normalizeOpenAPI(
     servers:
       "servers" in document
         ? (document.servers ?? []).map((server: OpenAPIServer) => ({
-            url: server.url,
-            description: server.description,
-          }))
+          url: server.url,
+          description: server.description,
+        }))
         : [],
 
     services: [...services.values()],
+    types: normalizeNamedTypes(schemas),
+    auth: normalizeAuth(securitySchemes),
   };
 }
 

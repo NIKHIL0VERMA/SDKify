@@ -1,0 +1,77 @@
+export interface ClientConfig {
+  baseUrl?: string;
+{% for auth in authSchemes %}
+{% if auth.kind == "apiKey" %}
+  {{ auth.configName }}?: string;
+{% elseif auth.kind == "http" and auth.scheme == "bearer" %}
+  {{ auth.configName }}?: string;
+{% endif %}
+{% endfor %}
+}
+
+export class Client {
+  private readonly baseUrl: string;
+{% for auth in authSchemes %}
+{% if auth.kind == "apiKey" %}
+  private readonly {{ auth.configName }}?: string;
+{% elseif auth.kind == "http" and auth.scheme == "bearer" %}
+  private readonly {{ auth.configName }}?: string;
+{% endif %}
+{% endfor %}
+
+  constructor(config: ClientConfig = {}) {
+    this.baseUrl = config.baseUrl ?? "{{ baseUrl }}";
+{% for auth in authSchemes %}
+{% if auth.kind == "apiKey" or (auth.kind == "http" and auth.scheme == "bearer") %}
+    this.{{ auth.configName }} = config.{{ auth.configName }};
+{% endif %}
+{% endfor %}
+  }
+
+  async request<T>(
+    path: string,
+    init: RequestInit = {},
+  ): Promise<T> {
+    const url = new URL(path, this.baseUrl);
+
+    const headers = new Headers(init.headers);
+
+{% for auth in authSchemes %}
+{% if auth.kind == "apiKey" and auth.location == "header" %}
+    if (this.{{ auth.configName }}) {
+      headers.set(
+        "{{ auth.wireName }}",
+        this.{{ auth.configName }},
+      );
+    }
+{% elseif auth.kind == "http" and auth.scheme == "bearer" %}
+    if (this.{{ auth.configName }}) {
+      headers.set(
+        "Authorization",
+        `Bearer ${this.{{ auth.configName }}}`,
+      );
+    }
+{% endif %}
+{% endfor %}
+
+    const response = await fetch(url, {
+      ...init,
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `HTTP ${response.status}: ${response.statusText}`,
+      );
+    }
+
+    if (
+      response.status === 204 ||
+      response.headers.get("content-length") === "0"
+    ) {
+      return undefined as T;
+    }
+
+    return await response.json() as T;
+  }
+}
