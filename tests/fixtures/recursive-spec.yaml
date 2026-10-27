@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info:
+  title: Recursive API
+  version: 1.0.0
+  description: API with self-referencing models.
+servers:
+  - url: https://example.com
+paths:
+  /v1/nodes/{nodeId}:
+    get:
+      summary: Get a tree node
+      operationId: getNode
+      tags: [nodes]
+      parameters:
+        - name: nodeId
+          in: path
+          required: true
+          schema: { type: string }
+          description: Node id.
+      responses:
+        "200":
+          description: The tree node.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TreeNode" }
+components:
+  schemas:
+    NodeKind:
+      type: string
+      enum: [folder, file]
+      description: Node kind.
+    TreeNode:
+      type: object
+      description: A node in a tree.
+      required: [id, label, kind, children]
+      properties:
+        id: { type: string, description: Node id. }
+        label: { type: string, description: Display label. }
+        kind: { $ref: "#/components/schemas/NodeKind", description: Node kind. }
+        children:
+          type: array
+          description: Child nodes.
+          items: { $ref: "#/components/schemas/TreeNode" }
+        parent:
+          $ref: "#/components/schemas/TreeNode"
+          description: Parent node, if any.

@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info:
+  title: Fixture API
+  version: 1.0.0
+  description: Minimal spec exercising enums, models, and operations.
+servers:
+  - url: https://api.example.com/v1
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Status:
+      type: string
+      description: Resource status
+      enum:
+        - draft
+        - published
+    Flag:
+      type: boolean
+      enum: [true, false]
+      description: Demo boolean enum.
+    Task:
+      type: object
+      required:
+        - id
+        - status
+      properties:
+        id:
+          type: string
+        status:
+          $ref: "#/components/schemas/Status"
+        priority:
+          type: string
+          enum:
+            - low
+            - high
+        problems_only:
+          type: boolean
+          default: false
+          description: Only problem entries.
+        flag:
+          $ref: "#/components/schemas/Flag"
+          description: Demo boolean flag.
+paths:
+  /tasks:
+    get:
+      operationId: listTasks
+      summary: List tasks
+      tags: [Tasks]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter by status
+          schema:
+            $ref: "#/components/schemas/Status"
+        - name: archived
+          in: query
+          required: false
+          description: Only archived tasks
+          schema: { type: boolean }
+          example: false
+      responses:
+        "200":
+          description: Tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      summary: Create a task
+      tags: [Tasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Task"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"

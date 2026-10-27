@@ -1,0 +1,28 @@
+{% if description %}
+/**
+ * {{ description }}
+ */
+{% endif %}
+import { z } from "zod";
+{% for dependency in schemaImports %}
+import { {{ dependency.name }} } from "./{{ dependency.fileName }}.js";
+{% endfor %}
+{% for dependency in typeImports %}
+import type { {{ dependency.name }} } from "./{{ dependency.fileName }}.js";
+{% endfor %}
+{% if recursive %}
+
+/**
+ * Recursive model — the type is declared structurally so the
+ * self-referencing schema can be annotated with it without creating a
+ * circular z.infer.
+ */
+export type {{ name }} = {{ tsTypeExpression }};
+
+export const {{ name }}Schema: z.ZodType<{{ name }}> = {{ schemaExpression }};
+{% else %}
+
+export const {{ name }}Schema = {{ schemaExpression }};
+
+export type {{ name }} = z.infer<typeof {{ name }}Schema>;
+{% endif %}

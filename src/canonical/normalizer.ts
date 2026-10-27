@@ -1,6 +1,5 @@
 import type { OpenAPI } from "@scalar/openapi-types";
 
-// normalizers
 import { normalizeParameter } from "./parameter.js";
 import { normalizeRequestBody } from "./request.js";
 import { normalizeResponse } from "./response.js";

@@ -1,0 +1,22 @@
+```python
+{% set pkg = sdk.name | caseSnake %}
+{% set imports = method.docsImportNames | join(", ") %}
+from {{ pkg }} import {{ imports }}
+
+{% for line in docsSetupLines %}
+{{ line }}
+{% endfor %}
+
+{% for line in method.docsBuildupLines %}
+{{ line }}
+{% endfor %}
+{% set prefix = method.response ? "result = " : "" %}
+{{ prefix }}client.{{ method.serviceInstance }}.{{ method.name }}(
+{% for parameter in method.exampleParams %}
+    {{ parameter.name }}={{ parameter.example }},
+{% endfor %}
+)
+{% if method.response %}
+print(result)
+{% endif %}
+```

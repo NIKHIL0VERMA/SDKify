@@ -1,0 +1,199 @@
+from __future__ import annotations
+
+import typing
+
+{% if typingImports is not empty %}
+from typing import {{ typingImports | join(", ") }}
+
+{% endif %}
+{% for enum in enumImports %}
+from ..models.{{ enum.fileName }} import {{ enum.name }}
+{% endfor %}
+
+if typing.TYPE_CHECKING:
+    from ..client import Client
+{% if fileImport %}
+    from ..input_file import InputFile
+{% endif %}
+{% for model in modelImports %}
+    from ..models.{{ model.fileName }} import {{ model.name }}
+{% endfor %}
+
+{% if pydanticModelImports is not empty %}
+{% for model in pydanticModelImports %}
+from ..models.{{ model.fileName }} import {{ model.name }}
+{% endfor %}
+
+{% endif %}
+
+{% for def in synthesized %}
+{% if def.required is not empty and def.optional is not empty %}
+class {{ def.baseName }}(TypedDict):
+{% for property in def.required %}
+    {{ property.name }}: {{ property.pyType }}
+{% endfor %}
+
+class {{ def.name }}({{ def.baseName }}, total=False):
+{% for property in def.optional %}
+    {{ property.name }}: {{ property.pyType }}
+{% endfor %}
+{% elseif def.optional is not empty %}
+class {{ def.name }}(TypedDict, total=False):
+{% for property in def.optional %}
+    {{ property.name }}: {{ property.pyType }}
+{% endfor %}
+{% else %}
+class {{ def.name }}(TypedDict):
+{% for property in def.required %}
+    {{ property.name }}: {{ property.pyType }}
+{% endfor %}
+{% if def.required is empty %}
+    pass
+{% endif %}
+{% endif %}
+
+{% endfor %}
+{% if description %}
+
+class {{ className }}:
+    """{{ description | replace({'"""': "'''"}) | firstLine }}"""
+{% else %}
+
+class {{ className }}:
+{% endif %}
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+{% for method in methods %}
+    def {{ method.name }}(
+        self,
+{% if method.bodyOnly and not method.isMultipart %}
+        body: {{ method.body.pyType }},
+{% elseif method.isMultipart or method.path is not empty or method.query is not empty or method.header is not empty or method.hasBody %}
+        *,
+{% for parameter in method.path %}
+        {{ parameter.name }}: {{ parameter.pyType }}{% if not parameter.required %} | None = None{% endif %},
+{% endfor %}
+{% for parameter in method.query %}
+        {{ parameter.name }}: {{ parameter.pyType }}{% if not parameter.required %} | None = None{% endif %},
+{% endfor %}
+{% for parameter in method.header %}
+        {{ parameter.name }}: {{ parameter.pyType }}{% if not parameter.required %} | None = None{% endif %},
+{% endfor %}
+{% if method.isMultipart %}
+{% for field in method.fields %}
+        {{ field.name }}: {{ field.pyType }}{% if not field.required %} | None = None{% endif %},
+{% endfor %}
+{% elseif method.hasBody %}
+        body: {{ method.body.pyType }}{% if not method.body.required %} | None = None{% endif %},
+{% endif %}
+{% endif %}
+    ) -> {% if method.response %}{{ method.response }}{% else %}None{% endif %}:
+{% if method.summary %}
+        """{{ method.summary | replace({'"""': "'''"}) | firstLine }}"""
+{% elseif method.description %}
+        """{{ method.description | replace({'"""': "'''"}) | firstLine }}"""
+{% endif %}
+{% if method.isMultipart %}
+        request_files: list[tuple[str, tuple[str, bytes]]] = []
+        request_data: dict[str, object] = {}
+{% if method.hasQuery %}
+
+        request_params: dict[str, object] = {}
+{% for parameter in method.query %}
+{% set serialized = parameter.isEnum ? (parameter.name ~ ".value") : parameter.name %}
+        if {{ parameter.name }} is not None:
+            request_params["{{ parameter.wireName }}"] = {{ serialized }}
+{% endfor %}
+{% endif %}
+{% if method.hasHeader %}
+
+        request_headers: dict[str, str] = {}
+{% for parameter in method.header %}
+{% set serialized = parameter.isEnum ? (parameter.name ~ ".value") : parameter.name %}
+        if {{ parameter.name }} is not None:
+            request_headers["{{ parameter.wireName }}"] = {{ serialized }}
+{% endfor %}
+{% endif %}
+{% for field in method.fields %}
+{% if field.isFileArray %}
+        for upload in {{ field.name }}:
+            request_files.append(("{{ field.wireName }}", (upload.name, upload.data)))
+{% elseif field.isFile %}
+        request_files.append(("{{ field.wireName }}", ({{ field.name }}.name, {{ field.name }}.data)))
+{% else %}
+{% if field.required %}
+        request_data["{{ field.wireName }}"] = {{ field.encode | default(field.name) }}
+{% else %}
+        if {{ field.name }} is not None:
+            request_data["{{ field.wireName }}"] = {{ field.encode | default(field.name) }}
+{% endif %}
+{% endif %}
+{% endfor %}
+
+        {{ method.requestHead }}
+            "{{ method.method }}",
+            f"{{ method.pathExpression }}",
+{% if method.hasQuery %}
+            params=request_params or None,
+{% endif %}
+{% if method.hasHeader %}
+            headers=request_headers or None,
+{% endif %}
+            files=request_files or None,
+            data=request_data or None,
+        )
+{% if method.responseParse %}
+
+        return {{ method.responseParse }}
+{% endif %}
+{% elseif method.bodyOnly %}
+        {{ method.requestHead }}
+            "{{ method.method }}",
+            f"{{ method.pathExpression }}",
+            json={{ method.bodyEncode | default("body") }},
+        )
+{% if method.responseParse %}
+
+        return {{ method.responseParse }}
+{% endif %}
+{% else %}
+{% if method.hasQuery %}
+
+        request_params: dict[str, object] = {}
+{% for parameter in method.query %}
+{% set serialized = parameter.isEnum ? (parameter.name ~ ".value") : parameter.name %}
+        if {{ parameter.name }} is not None:
+            request_params["{{ parameter.wireName }}"] = {{ serialized }}
+{% endfor %}
+{% endif %}
+{% if method.hasHeader %}
+
+        request_headers: dict[str, str] = {}
+{% for parameter in method.header %}
+{% set serialized = parameter.isEnum ? (parameter.name ~ ".value") : parameter.name %}
+        if {{ parameter.name }} is not None:
+            request_headers["{{ parameter.wireName }}"] = {{ serialized }}
+{% endfor %}
+{% endif %}
+
+        {{ method.requestHead }}
+            "{{ method.method }}",
+            f"{{ method.pathExpression }}",
+{% if method.hasQuery %}
+            params=request_params or None,
+{% endif %}
+{% if method.hasHeader %}
+            headers=request_headers or None,
+{% endif %}
+{% if method.hasBody %}
+            json={{ method.bodyEncode | default("body") }},
+{% endif %}
+        )
+{% if method.responseParse %}
+
+        return {{ method.responseParse }}
+{% endif %}
+{% endif %}
+
+{% endfor %}

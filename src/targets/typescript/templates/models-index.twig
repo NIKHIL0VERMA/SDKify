@@ -1,3 +1,6 @@
 {% for model in models %}
 export * from "./{{ model.fileName }}.js";
 {% endfor %}
+{% for enum in enums %}
+export * from "./{{ enum.fileName }}.js";
+{% endfor %}

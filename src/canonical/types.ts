@@ -70,32 +70,20 @@ export interface Operation {
 }
 
 export interface Parameter {
-  /**
-   * SDK-friendly name.
-   *
-   * customer_id -> customerId
-   */
-  name: string;
-
-  /**
-   * Name sent over HTTP.
-   *
-   * customerId -> customer_id
-   */
   wireName: string;
-
   location: "path" | "query" | "header" | "cookie";
-
   required: boolean;
   description?: string;
-
   type: TypeReference;
+  example?: unknown;
+  default?: unknown;
 }
 
 export interface RequestBody {
   required: boolean;
   contentType: string;
   type: TypeReference;
+  example?: unknown;
 }
 
 export interface Response {
@@ -112,6 +100,7 @@ export type TypeReference =
   | EnumType
   | UnionType
   | IntersectionType
+  | FileType
   | UnknownType;
 
 export interface PrimitiveType {
@@ -145,10 +134,12 @@ export interface ObjectType {
 }
 
 export interface ObjectProperty {
-  name: string;
   wireName: string;
   required: boolean;
   type: TypeReference;
+  description?: string;
+  example?: unknown;
+  default?: unknown;
 }
 
 export interface UnknownType {
@@ -158,6 +149,11 @@ export interface UnknownType {
 export interface EnumType {
   kind: "enum";
   values: Array<string | number | boolean>;
+  nullable?: boolean;
+}
+
+export interface FileType {
+  kind: "file";
   nullable?: boolean;
 }
 

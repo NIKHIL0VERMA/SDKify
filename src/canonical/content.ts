@@ -4,6 +4,7 @@ import { normalizeSchema } from "./schema.js";
 type ContentResult = {
   contentType: string;
   type: TypeReference;
+  example?: unknown;
 };
 
 export function normalizeContent(
@@ -32,7 +33,30 @@ export function normalizeContent(
   return {
     contentType,
     type: normalizeSchema(schema),
+    example: selectExample(mediaType.example, mediaType.examples),
   };
+}
+
+function selectExample(
+  example: unknown,
+  examples: unknown,
+): unknown {
+  if (typeof example !== "undefined") {
+    return example;
+  }
+
+  if (isRecord(examples)) {
+    for (const entry of Object.values(examples)) {
+      if (
+        isRecord(entry) &&
+        typeof entry.value !== "undefined"
+      ) {
+        return entry.value;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function selectContentType(

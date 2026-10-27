@@ -7,6 +7,8 @@ type OpenAPIParameter = {
   required?: unknown;
   description?: unknown;
   schema?: unknown;
+  example?: unknown;
+  default?: unknown;
   $ref?: unknown;
 };
 
@@ -20,7 +22,6 @@ const LOCATIONS = new Set([
 export function normalizeParameter(
   parameter: OpenAPIParameter,
 ): Parameter {
-  // We'll resolve parameter $refs later.
   if (typeof parameter.$ref === "string") {
     throw new Error(
       `Parameter $ref is not supported yet: ${parameter.$ref}`,
@@ -45,12 +46,8 @@ export function normalizeParameter(
     : undefined;
 
   return {
-    name: camelCase(parameter.name),
     wireName: parameter.name,
-
     location: parameter.in as Parameter["location"],
-
-    // OpenAPI path parameters are always required.
     required:
       parameter.in === "path" ||
       parameter.required === true,
@@ -61,14 +58,24 @@ export function normalizeParameter(
         : undefined,
 
     type: normalizeSchema(schema),
+    example: selectValue(parameter.example, schema?.example),
+    default: selectValue(parameter.default, schema?.default),
   };
 }
 
-function camelCase(value: string): string {
-  return value.replace(
-    /[_-]+([a-zA-Z0-9])/g,
-    (_, character: string) => character.toUpperCase(),
-  );
+function selectValue(
+  primary: unknown,
+  fallback: unknown,
+): unknown {
+  if (typeof primary !== "undefined") {
+    return primary;
+  }
+
+  if (typeof fallback !== "undefined") {
+    return fallback;
+  }
+
+  return undefined;
 }
 
 function isRecord(

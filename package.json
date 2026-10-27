@@ -4,7 +4,7 @@
   "description": "Generate developer-friendly SDKs from OpenAPI specifications.",
   "type": "module",
   "scripts": {
-    "generate": "tsx src/index.ts examples/kapso/openapi-platform.yaml",
+    "gen": "tsx src/cli/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

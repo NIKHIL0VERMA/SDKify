@@ -1,0 +1,27 @@
+from __future__ import annotations
+
+import os
+
+class InputFile:
+    """Upload payload for file parameters.
+
+    Wraps file bytes with a filename so multipart requests carry proper
+    file parts. Create with `from_path` or `from_bytes`.
+    """
+
+    def __init__(self, data: bytes, name: str) -> None:
+        self.data = data
+        self.name = name
+
+    @classmethod
+    def from_bytes(cls, data: bytes, name: str = "file") -> InputFile:
+        """Creates an upload from in-memory bytes."""
+        return cls(data, name)
+
+    @classmethod
+    def from_path(cls, path: str, name: str | None = None) -> InputFile:
+        """Creates an upload from a file path."""
+        with open(path, "rb") as handle:
+            data = handle.read()
+
+        return cls(data, name or os.path.basename(path))

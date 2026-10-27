@@ -1,0 +1,97 @@
+from __future__ import annotations
+
+import json
+import typing
+from urllib.parse import urlsplit
+
+import httpx
+
+{% for service in sdkServices %}
+from .services.{{ service.fileName }} import {{ service.className }}
+{% endfor %}
+
+class ApiError(Exception):
+    """HTTP error carrying the status code and parsed response body."""
+
+    def __init__(self, status: int, body: typing.Any) -> None:
+        super().__init__(f"HTTP {status}")
+        self.status = status
+        self.body = body
+
+def _encode_multipart_data(data: dict[str, object]) -> dict[str, str]:
+    """Encodes non-string multipart data parts as JSON strings."""
+    return {
+        key: value if isinstance(value, str) else json.dumps(value)
+        for key, value in data.items()
+    }
+
+class Client:
+    """HTTP client with authentication and JSON handling."""
+
+    def __init__(
+        self,
+        *,
+        base_url: str = "{{ baseUrl }}",
+        timeout: float = 30.0,
+{% for auth in authSchemes %}
+        {{ auth.configName }}: str | None = None,
+{% endfor %}
+    ) -> None:
+        self._http = httpx.Client(timeout=timeout)
+        self._base_url = base_url.rstrip("/")
+{% for auth in authSchemes %}
+        self._{{ auth.configName }} = {{ auth.configName }}
+{% endfor %}
+
+{% for service in sdkServices %}
+        self.{{ service.instanceName }} = {{ service.className }}(self)
+{% endfor %}
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, object] | None = None,
+        headers: dict[str, str] | None = None,
+        json: object | None = None,
+        files: list[tuple[str, tuple[str, bytes]]] | None = None,
+        data: dict[str, object] | None = None,
+    ) -> typing.Any:
+        # The request path carries the full server path (base path +
+        # operation path), so only the origin of base_url is used.
+        parts = urlsplit(self._base_url)
+        url = f"{parts.scheme}://{parts.netloc}{path}"
+        request_headers = dict(headers or {})
+{% for auth in authSchemes %}
+{% if auth.kind == "apiKey" and auth.location == "header" %}
+        if self._{{ auth.configName }} is not None:
+            request_headers["{{ auth.wireName }}"] = self._{{ auth.configName }}
+{% elseif auth.kind == "http" and auth.scheme == "bearer" %}
+        if self._{{ auth.configName }} is not None:
+            request_headers["Authorization"] = f"Bearer {self._{{ auth.configName }}}"
+{% endif %}
+{% endfor %}
+
+        response = self._http.request(
+            method,
+            url,
+            params=params or None,
+            headers=request_headers or None,
+            json=json,
+            files=files,
+            data=_encode_multipart_data(data) if data is not None else None,
+        )
+
+        if not 200 <= response.status_code < 300:
+            try:
+                body: typing.Any = response.json()
+            except ValueError:
+                body = response.text
+
+            raise ApiError(response.status_code, body)
+
+        if response.status_code == 204 or not response.content:
+            return None
+
+        return response.json()

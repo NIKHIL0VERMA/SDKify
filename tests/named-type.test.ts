@@ -27,7 +27,6 @@ describe("normalizeNamedTypes", () => {
           kind: "object",
           properties: [
             {
-              name: "id",
               wireName: "id",
               required: true,
               type: {
@@ -36,7 +35,6 @@ describe("normalizeNamedTypes", () => {
               },
             },
             {
-              name: "externalCustomerId",
               wireName: "external_customer_id",
               required: false,
               type: {
@@ -86,7 +84,6 @@ describe("normalizeNamedTypes", () => {
               kind: "object",
               properties: [
                 {
-                  name: "token",
                   wireName: "token",
                   required: true,
                   type: {

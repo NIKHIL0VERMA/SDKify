@@ -14,7 +14,6 @@ describe("normalizeParameter", () => {
         },
       }),
     ).toEqual({
-      name: "customerId",
       wireName: "customer_id",
       location: "path",
       required: true,
@@ -36,7 +35,6 @@ describe("normalizeParameter", () => {
         },
       }),
     ).toEqual({
-      name: "pageSize",
       wireName: "page_size",
       location: "query",
       required: false,

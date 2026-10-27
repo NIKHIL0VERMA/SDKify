@@ -1,0 +1,16 @@
+import { z } from "zod";
+{% if description %}
+
+/**
+ * {{ description }}
+ */
+{% endif %}
+export const {{ name }}Schema = {{ schemaExpression }};
+
+export const {{ name }} = {
+{% for value in values %}
+  {{ value.name }}: {{ value.literal }},
+{% endfor %}
+} as const;
+
+export type {{ name }} = (typeof {{ name }})[keyof typeof {{ name }}];

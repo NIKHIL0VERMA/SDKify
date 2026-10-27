@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info:
+  title: Upload API
+  version: 1.0.0
+  description: Spec exercising multipart file uploads and docs examples.
+servers:
+  - url: https://api.example.com/v1
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+paths:
+  /media:
+    post:
+      operationId: uploadMedia
+      summary: Upload a file
+      tags: [Media]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The file to upload
+                name:
+                  type: string
+                  description: Optional display name
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    type: string
+                  size:
+                    type: integer
+  /media/batch:
+    post:
+      operationId: uploadMediaBatch
+      summary: Upload multiple files
+      tags: [Media]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - files
+              properties:
+                files:
+                  type: array
+                  description: Files to upload
+                  items:
+                    type: string
+                    format: binary
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ids:
+                    type: array
+                    items:
+                      type: string

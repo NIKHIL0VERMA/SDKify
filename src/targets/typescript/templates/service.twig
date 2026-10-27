@@ -1,0 +1,204 @@
+{% if dependencies is not empty %}
+{% for dependency in dependencies %}
+import type { {{ dependency.name }} } from "../models/{{ dependency.fileName }}.js";
+{% endfor %}
+{% endif %}
+{% if needsZod %}
+import { z } from "zod";
+{% endif %}
+{% for schema in schemaImports %}
+import { {{ schema.name }}{% if schema.withType %}, type {{ schema.modelName }}{% endif %} } from "../models/{{ schema.fileName }}.js";
+{% endfor %}
+import type { Client } from "../client.js";
+
+{% if description %}
+/**
+ * {{ description }}
+ */
+{% endif %}
+export class {{ className }} {
+  constructor(private readonly client: Client) {}
+
+{% for method in methods %}
+  /**
+{% if method.summary %}
+   * {{ method.summary | firstLine }}
+{% elseif method.description %}
+   * {{ method.description | firstLine }}
+{% endif %}
+{% for parameter in method.path %}
+{% if parameter.description %}
+   * @param {{ parameter.name }} - {{ parameter.description | firstLine }}
+{% endif %}
+{% endfor %}
+{% for parameter in method.query %}
+{% if parameter.description %}
+   * @param {{ parameter.name }} - {{ parameter.description | firstLine }}
+{% endif %}
+{% endfor %}
+{% for parameter in method.header %}
+{% if parameter.description %}
+   * @param {{ parameter.name }} - {{ parameter.description | firstLine }}
+{% endif %}
+{% endfor %}
+{% if method.isMultipart %}
+{% for field in method.fields %}
+{% if field.description %}
+   * @param {{ field.name }} - {{ field.description | firstLine }}
+{% endif %}
+{% endfor %}
+{% elseif method.hasBody %}
+   * @param body - {{ method.body.tsType }}
+{% endif %}
+   */
+  async {{ method.name }}(
+{% if method.isMultipart %}
+    args{% if not method.argsRequired %}?{% endif %}: {
+{% for parameter in method.path %}
+{% if parameter.description %}
+      /** {{ parameter.description | firstLine }} */
+{% endif %}
+      {{ parameter.name }}{% if not parameter.required %}?{% endif %}: {{ parameter.tsType }};
+{% endfor %}
+{% for parameter in method.query %}
+{% if parameter.description %}
+      /** {{ parameter.description | firstLine }} */
+{% endif %}
+      {{ parameter.name }}{% if not parameter.required %}?{% endif %}: {{ parameter.tsType }};
+{% endfor %}
+{% for parameter in method.header %}
+{% if parameter.description %}
+      /** {{ parameter.description | firstLine }} */
+{% endif %}
+      {{ parameter.name }}{% if not parameter.required %}?{% endif %}: {{ parameter.tsType }};
+{% endfor %}
+{% for field in method.fields %}
+{% if field.description %}
+      /** {{ field.description | firstLine }} */
+{% endif %}
+      {{ field.name }}{% if not field.required %}?{% endif %}: {{ field.tsType }};
+{% endfor %}
+    }
+{% elseif method.bodyOnly %}
+    body{% if not method.body.required %}?{% endif %}: {{ method.body.tsType }}
+{% elseif method.path is not empty or method.query is not empty or method.header is not empty or method.hasBody %}
+    args{% if not method.argsRequired %}?{% endif %}: {
+{% for parameter in method.path %}
+{% if parameter.description %}
+      /** {{ parameter.description | firstLine }} */
+{% endif %}
+      {{ parameter.name }}{% if not parameter.required %}?{% endif %}: {{ parameter.tsType }};
+{% endfor %}
+{% for parameter in method.query %}
+{% if parameter.description %}
+      /** {{ parameter.description | firstLine }} */
+{% endif %}
+      {{ parameter.name }}{% if not parameter.required %}?{% endif %}: {{ parameter.tsType }};
+{% endfor %}
+{% for parameter in method.header %}
+{% if parameter.description %}
+      /** {{ parameter.description | firstLine }} */
+{% endif %}
+      {{ parameter.name }}{% if not parameter.required %}?{% endif %}: {{ parameter.tsType }};
+{% endfor %}
+{% if method.hasBody %}
+      body{% if not method.body.required %}?{% endif %}: {{ method.body.tsType }};
+{% endif %}
+    }
+{% endif %}
+  ): Promise<{% if method.response %}{{ method.response }}{% else %}void{% endif %}> {
+{% if method.isMultipart %}
+{% if method.destructured is not empty %}
+    const { {{ method.destructured | join(", ") }} } = args ?? {};
+
+{% endif %}
+    const formData = new FormData();
+{% for field in method.fields %}
+{% if field.isFileArray %}
+{% if field.required %}
+    for (const file of {{ field.name }}) {
+      formData.append("{{ field.wireName }}", file.data, file.name);
+    }
+{% else %}
+    if ({{ field.name }} !== undefined) {
+      for (const file of {{ field.name }}) {
+        formData.append("{{ field.wireName }}", file.data, file.name);
+      }
+    }
+{% endif %}
+{% elseif field.isFile %}
+    if ({{ field.name }} !== undefined) {
+      formData.append("{{ field.wireName }}", {{ field.name }}.data, {{ field.name }}.name);
+    }
+{% elseif field.isJson %}
+{% if field.required %}
+    formData.append("{{ field.wireName }}", JSON.stringify({{ field.name }}));
+{% else %}
+    if ({{ field.name }} !== undefined) {
+      formData.append("{{ field.wireName }}", JSON.stringify({{ field.name }}));
+    }
+{% endif %}
+{% else %}
+{% if field.required %}
+    formData.append("{{ field.wireName }}", String({{ field.name }}));
+{% else %}
+    if ({{ field.name }} !== undefined) {
+      formData.append("{{ field.wireName }}", String({{ field.name }}));
+    }
+{% endif %}
+{% endif %}
+{% endfor %}
+
+    {{ method.requestHead }}`{{ method.pathExpression }}`, {
+      method: "{{ method.method }}",
+      body: formData,
+    });
+{% if method.responseParse %}
+
+    return {{ method.responseParse }};
+{% endif %}
+{% elseif method.bodyOnly %}
+    {{ method.requestHead }}`{{ method.pathExpression }}`, {
+      method: "{{ method.method }}",
+{% if method.hasBody %}
+      body,
+{% endif %}
+    });
+{% if method.responseParse %}
+
+    return {{ method.responseParse }};
+{% endif %}
+{% else %}
+{% if method.destructured is not empty %}
+    const { {{ method.destructured | join(", ") }} } = args ?? {};
+{% endif %}
+
+    {{ method.requestHead }}`{{ method.pathExpression }}`, {
+      method: "{{ method.method }}",
+{% if method.hasQuery %}
+      query: {
+{% for parameter in method.query %}
+        {{ parameter.queryKey }}: args?.{{ parameter.name }},
+{% endfor %}
+      },
+{% endif %}
+{% if method.hasHeader %}
+      headers: {
+{% for parameter in method.header %}
+        "{{ parameter.wireName }}": args?.{{ parameter.name }},
+{% endfor %}
+      },
+{% endif %}
+{% if method.hasBody %}
+      body,
+{% endif %}
+    });
+{% if method.responseParse %}
+
+    return {{ method.responseParse }};
+{% endif %}
+{% endif %}
+  }
+
+{% endfor %}
+}

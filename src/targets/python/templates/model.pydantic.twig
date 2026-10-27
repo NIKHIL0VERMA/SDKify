@@ -1,0 +1,80 @@
+{% if kind == "alias" %}
+{% for line in descriptionLines %}
+# {{ line }}
+{% endfor %}
+{% if typingImports is not empty %}
+
+from typing import {{ typingImports | join(", ") }}
+
+{% endif %}
+{% if enumImports is not empty %}
+{% for enum in enumImports %}
+from .{{ enum.fileName }} import {{ enum.name }}
+{% endfor %}
+
+{% endif %}
+{% if modelImports is not empty %}
+{% for model in modelImports %}
+from .{{ model.fileName }} import {{ model.name }}
+{% endfor %}
+
+{% endif %}
+{% if fileImport %}
+
+from ..input_file import InputFile
+
+{% endif %}
+{{ name }} = {{ pyType }}
+{% else %}
+from __future__ import annotations
+{% if typingImports is not empty %}
+
+from typing import {{ typingImports | join(", ") }}
+{% endif %}
+from pydantic import BaseModel, ConfigDict{% if fieldImport %}, Field{% endif %}
+{% for enum in enumImports %}
+
+from .{{ enum.fileName }} import {{ enum.name }}
+{% endfor %}
+{% for parent in parentImports %}
+
+from .{{ parent.fileName }} import {{ parent.name }}
+{% endfor %}
+{% if modelImports is not empty %}
+
+{% for model in modelImports %}
+from .{{ model.fileName }} import {{ model.name }}
+{% endfor %}
+{% endif %}
+{% if fileImport %}
+
+import typing
+
+if typing.TYPE_CHECKING:
+    from ..input_file import InputFile
+{% endif %}
+{% if description %}
+
+class {{ name }}({% if parents is not empty %}{{ parents | join(", ") }}, {% endif %}BaseModel):
+    """{{ description | replace({'"""': "'''"}) }}"""
+{% else %}
+
+class {{ name }}({% if parents is not empty %}{{ parents | join(", ") }}, {% endif %}BaseModel):
+{% endif %}
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+{% for property in fields %}
+{% if property.description %}
+
+    # {{ property.description | firstLine }}
+{% endif %}
+{% if property.hasAlias %}
+    {{ property.name }}: {{ property.pyType }}{% if not property.required %} | None{% endif %} = Field({% if property.hasDefault %}default={{ property.default }}, {% endif %}alias={{ property.alias }})
+{% elseif property.hasDefault %}
+    {{ property.name }}: {{ property.pyType }}{% if not property.required %} | None{% endif %} = {{ property.default }}
+{% elseif not property.required %}
+    {{ property.name }}: {{ property.pyType }} | None = None
+{% else %}
+    {{ property.name }}: {{ property.pyType }}
+{% endif %}
+{% endfor %}
+{% endif %}

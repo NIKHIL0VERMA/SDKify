@@ -1,0 +1,29 @@
+"""{{ sdk.name }} SDK."""
+
+from .client import ApiError, Client
+from .input_file import InputFile
+
+{% for model in models %}
+from .models.{{ model.fileName }} import {{ model.name }}
+{% endfor %}
+{% for enum in enums %}
+from .models.{{ enum.fileName }} import {{ enum.name }}
+{% endfor %}
+{% for service in sdkServices %}
+from .services.{{ service.fileName }} import {{ service.className }}
+{% endfor %}
+
+__all__ = [
+    "ApiError",
+    "Client",
+    "InputFile",
+{% for model in models %}
+    "{{ model.name }}",
+{% endfor %}
+{% for enum in enums %}
+    "{{ enum.name }}",
+{% endfor %}
+{% for service in sdkServices %}
+    "{{ service.className }}",
+{% endfor %}
+]

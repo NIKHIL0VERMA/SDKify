@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { normalizeSchema } from "../src/canonical/schema.js";
-import { toTypeScriptType } from "../src/targets/typescript/type-mapper.js";
 
 describe("normalizeSchema", () => {
   it("normalizes string", () => {
@@ -54,6 +53,7 @@ describe("normalizeSchema", () => {
       nullable: true,
     });
   });
+
   it("normalizes inline objects", () => {
     expect(
       normalizeSchema({
@@ -72,7 +72,6 @@ describe("normalizeSchema", () => {
       kind: "object",
       properties: [
         {
-          name: "name",
           wireName: "name",
           required: true,
           type: {
@@ -81,7 +80,6 @@ describe("normalizeSchema", () => {
           },
         },
         {
-          name: "externalCustomerId",
           wireName: "external_customer_id",
           required: false,
           type: {
@@ -93,86 +91,51 @@ describe("normalizeSchema", () => {
       ],
     });
   });
+
   it("normalizes enums", () => {
-  expect(
-    normalizeSchema({
-      type: "string",
-      enum: [
-        "rising",
-        "falling",
-        "recurring",
-      ],
-    }),
-  ).toEqual({
-    kind: "enum",
-    values: [
-      "rising",
-      "falling",
-      "recurring",
-    ],
-  });
-});
-it("normalizes nullable oneOf references", () => {
-  expect(
-    normalizeSchema({
-      oneOf: [
-        {
-          $ref: "#/components/schemas/FindingSummaryInvestigation",
-        },
-        {
-          type: "null",
-        },
-      ],
-    }),
-  ).toEqual({
-    kind: "model",
-    name: "FindingSummaryInvestigation",
-    nullable: true,
-  });
-});
-it("normalizes oneOf unions", () => {
-  expect(
-    normalizeSchema({
-      oneOf: [
-        {
-          $ref: "#/components/schemas/Cat",
-        },
-        {
-          $ref: "#/components/schemas/Dog",
-        },
-      ],
-    }),
-  ).toEqual({
-    kind: "union",
-    variants: [
-      {
-        kind: "model",
-        name: "Cat",
-      },
-      {
-        kind: "model",
-        name: "Dog",
-      },
-    ],
-  });
-});
-it("maps enums", () => {
-  expect(
-    toTypeScriptType({
+    expect(
+      normalizeSchema({
+        type: "string",
+        enum: ["rising", "falling", "recurring"],
+      }),
+    ).toEqual({
       kind: "enum",
-      values: [
-        "rising",
-        "falling",
-        "recurring",
-      ],
-    }),
-  ).toBe(
-    '"rising" | "falling" | "recurring"',
-  );
-});
-it("maps unions", () => {
-  expect(
-    toTypeScriptType({
+      values: ["rising", "falling", "recurring"],
+    });
+  });
+
+  it("normalizes nullable oneOf references", () => {
+    expect(
+      normalizeSchema({
+        oneOf: [
+          {
+            $ref: "#/components/schemas/FindingSummaryInvestigation",
+          },
+          {
+            type: "null",
+          },
+        ],
+      }),
+    ).toEqual({
+      kind: "model",
+      name: "FindingSummaryInvestigation",
+      nullable: true,
+    });
+  });
+
+  it("normalizes oneOf unions", () => {
+    expect(
+      normalizeSchema({
+        oneOf: [
+          {
+            $ref: "#/components/schemas/Cat",
+          },
+          {
+            $ref: "#/components/schemas/Dog",
+          },
+        ],
+      }),
+    ).toEqual({
       kind: "union",
       variants: [
         {
@@ -184,93 +147,92 @@ it("maps unions", () => {
           name: "Dog",
         },
       ],
-    }),
-  ).toBe("Cat | Dog");
-});
-it("normalizes allOf intersections", () => {
-  expect(
-    normalizeSchema({
-      allOf: [
-        {
-          $ref: "#/components/schemas/InboxEmbed",
-        },
-        {
-          type: "object",
-          required: ["token", "embed_url"],
-          properties: {
-            token: {
-              type: "string",
-            },
-            embed_url: {
-              type: "string",
-            },
-          },
-        },
-      ],
-    }),
-  ).toEqual({
-    kind: "intersection",
-    variants: [
-      {
-        kind: "model",
-        name: "InboxEmbed",
-      },
-      {
-        kind: "object",
-        properties: [
+    });
+  });
+
+  it("normalizes allOf intersections", () => {
+    expect(
+      normalizeSchema({
+        allOf: [
           {
-            name: "token",
-            wireName: "token",
-            required: true,
-            type: {
-              kind: "primitive",
-              type: "string",
-            },
+            $ref: "#/components/schemas/InboxEmbed",
           },
           {
-            name: "embedUrl",
-            wireName: "embed_url",
-            required: true,
-            type: {
-              kind: "primitive",
-              type: "string",
+            type: "object",
+            required: ["token", "embed_url"],
+            properties: {
+              token: {
+                type: "string",
+              },
+              embed_url: {
+                type: "string",
+              },
             },
           },
         ],
-      },
-    ],
-  });
-});
-it("normalizes anyOf as a union", () => {
-  expect(
-    normalizeSchema({
-      anyOf: [
-        { type: "string" },
-        { type: "integer" },
-        { type: "number" },
-        { type: "boolean" },
+      }),
+    ).toEqual({
+      kind: "intersection",
+      variants: [
+        {
+          kind: "model",
+          name: "InboxEmbed",
+        },
+        {
+          kind: "object",
+          properties: [
+            {
+              wireName: "token",
+              required: true,
+              type: {
+                kind: "primitive",
+                type: "string",
+              },
+            },
+            {
+              wireName: "embed_url",
+              required: true,
+              type: {
+                kind: "primitive",
+                type: "string",
+              },
+            },
+          ],
+        },
       ],
-    }),
-  ).toEqual({
-    kind: "union",
-    variants: [
-      {
-        kind: "primitive",
-        type: "string",
-      },
-      {
-        kind: "primitive",
-        type: "integer",
-      },
-      {
-        kind: "primitive",
-        type: "number",
-      },
-      {
-        kind: "primitive",
-        type: "boolean",
-      },
-    ],
+    });
   });
-});
+
+  it("normalizes anyOf as a union", () => {
+    expect(
+      normalizeSchema({
+        anyOf: [
+          { type: "string" },
+          { type: "integer" },
+          { type: "number" },
+          { type: "boolean" },
+        ],
+      }),
+    ).toEqual({
+      kind: "union",
+      variants: [
+        {
+          kind: "primitive",
+          type: "string",
+        },
+        {
+          kind: "primitive",
+          type: "integer",
+        },
+        {
+          kind: "primitive",
+          type: "number",
+        },
+        {
+          kind: "primitive",
+          type: "boolean",
+        },
+      ],
+    });
+  });
 });

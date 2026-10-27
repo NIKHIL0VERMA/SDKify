@@ -1,0 +1,29 @@
+{
+  "name": "{{ sdk.name | caseKebab }}-sdk",
+  "version": "{{ sdk.version }}",
+  "description": "{{ sdk.description | firstLine }}",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "keywords": ["sdk", "api"],
+  "license": "MIT"
+}

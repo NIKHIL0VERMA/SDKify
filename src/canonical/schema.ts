@@ -73,6 +73,12 @@ export function normalizeSchema(
 
   switch (schema.type) {
     case "string":
+      if (schema.format === "binary") {
+        return {
+          kind: "file",
+        };
+      }
+
       return {
         kind: "primitive",
         type: "string",
@@ -167,24 +173,28 @@ function normalizeObjectSchema(
       ] => isRecord(entry[1]),
     )
     .map(([wireName, property]) => ({
-      name: camelCase(wireName),
+      
       wireName,
       required: required.has(wireName),
       type: normalizeSchema(property),
+      description:
+        typeof property.description === "string"
+          ? property.description
+          : undefined,
+      example:
+        typeof property.example !== "undefined"
+          ? property.example
+          : undefined,
+      default:
+        typeof property.default !== "undefined"
+          ? property.default
+          : undefined,
     }));
 
   return {
     kind: "object",
     properties,
   };
-}
-
-function camelCase(value: string): string {
-  return value.replace(
-    /[_-]+([a-zA-Z0-9])/g,
-    (_, character: string) =>
-      character.toUpperCase(),
-  );
 }
 
 function normalizeUnion(

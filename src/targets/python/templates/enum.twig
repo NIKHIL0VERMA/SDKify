@@ -1,0 +1,11 @@
+from enum import Enum
+
+{% if description %}
+class {{ name }}({% if allStrings %}str, {% endif %}Enum):
+    """{{ description | replace({'"""': "'''"}) }}"""
+{% else %}
+class {{ name }}({% if allStrings %}str, {% endif %}Enum):
+{% endif %}
+{% for value in values %}
+    {{ value.name }} = {{ value.literal }}
+{% endfor %}

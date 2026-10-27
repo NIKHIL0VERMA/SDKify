@@ -24,6 +24,7 @@ export function normalizeRequestBody(
     required: requestBody.required === true,
     contentType: normalized.contentType,
     type: normalized.type,
+    example: normalized.example,
   };
 }
 
