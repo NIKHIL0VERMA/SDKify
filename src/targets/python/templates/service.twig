@@ -90,9 +90,11 @@ class {{ className }}:
 {% endif %}
     ) -> {% if method.response %}{{ method.response }}{% else %}None{% endif %}:
 {% if method.summary %}
-        """{{ method.summary | replace({'"""': "'''"}) | firstLine }}"""
+        """{{ method.summary | replace({'"""': "'''"}) | firstLine }}{% if method.deprecated %} Deprecated.{% endif %}"""
 {% elseif method.description %}
-        """{{ method.description | replace({'"""': "'''"}) | firstLine }}"""
+        """{{ method.description | replace({'"""': "'''"}) | firstLine }}{% if method.deprecated %} Deprecated.{% endif %}"""
+{% elseif method.deprecated %}
+        """Deprecated."""
 {% endif %}
 {% if method.isMultipart %}
         request_files: list[tuple[str, tuple[str, bytes]]] = []

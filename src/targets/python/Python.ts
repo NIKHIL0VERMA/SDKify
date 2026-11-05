@@ -490,6 +490,7 @@ export class Python extends LanguageContract {
       method: method.method,
       summary: method.summary,
       description: method.description,
+      deprecated: method.deprecated === true,
       pathExpression,
       path,
       query,
@@ -1351,6 +1352,7 @@ export class Python extends LanguageContract {
       return {
         name: model.name,
         description: model.description,
+        deprecated: model.deprecated === true,
         kind: "pydantic",
         parents,
         fields,
@@ -1366,6 +1368,7 @@ export class Python extends LanguageContract {
     return {
       name: model.name,
       description: model.description,
+      deprecated: model.deprecated === true,
       kind: "alias",
       pyType,
       descriptionLines:
@@ -1419,6 +1422,7 @@ export class Python extends LanguageContract {
     return {
       name: enumType.name,
       description: enumType.description,
+      deprecated: enumType.deprecated === true,
       allStrings: values.every((value) => typeof value === "string"),
       values: values.map((value) => ({
         name: this.getEnumMemberName(value),

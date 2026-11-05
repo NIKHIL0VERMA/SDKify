@@ -7,6 +7,7 @@ export * from "./targets/index.js";
 import { parseOpenAPI } from "./parser/openapi.js";
 import { normalizeOpenAPI } from "./canonical/normalizer.js";
 import { SDKProject } from "./project/SDKProject.js";
+import { filterSpecByTags } from "./project/filter.js";
 import { getTarget, getTargetNames } from "./targets/index.js";
 import { Generator, type SDKMetadata } from "./generator/generator.js";
 import path from "node:path";
@@ -16,9 +17,15 @@ export async function generate(options: {
   output: string;
   language?: string;
   metadata?: SDKMetadata;
+  includeTags?: string[];
+  excludeTags?: string[];
 }): Promise<string[]> {
   const document = await parseOpenAPI(options.spec);
-  const spec = normalizeOpenAPI(document);
+  const normalized = normalizeOpenAPI(document);
+  const spec = filterSpecByTags(normalized, {
+    includeTags: options.includeTags,
+    excludeTags: options.excludeTags,
+  });
   const project = new SDKProject(spec);
   const languages = options.language
     ? [options.language]

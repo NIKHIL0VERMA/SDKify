@@ -1,8 +1,12 @@
 from enum import Enum
 
-{% if description %}
+{% if description or deprecated %}
 class {{ name }}({% if allStrings %}str, {% endif %}Enum):
-    """{{ description | replace({'"""': "'''"}) }}"""
+{% if description %}
+    """{{ description | replace({'"""': "'''"}) }}{% if deprecated %} Deprecated.{% endif %}"""
+{% else %}
+    """Deprecated."""
+{% endif %}
 {% else %}
 class {{ name }}({% if allStrings %}str, {% endif %}Enum):
 {% endif %}

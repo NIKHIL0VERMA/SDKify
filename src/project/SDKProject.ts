@@ -16,6 +16,8 @@ export interface PreparedOperation {
   fullPath: string;
   summary?: string;
   description?: string;
+  tags: string[];
+  deprecated?: boolean;
 
   parameters: {
     path: Parameter[];
@@ -134,6 +136,8 @@ export class SDKProject {
       fullPath: this.getBasePath() + operation.path,
       summary: operation.summary,
       description: operation.description,
+      tags: operation.tags,
+      deprecated: operation.deprecated,
       parameters: grouped,
       requestBody: operation.requestBody,
       response: operation.response,

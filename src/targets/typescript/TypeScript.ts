@@ -334,6 +334,7 @@ export class TypeScript extends LanguageContract {
       method: method.method,
       summary: method.summary,
       description: method.description,
+      deprecated: method.deprecated === true,
       pathExpression,
       path,
       query,
@@ -898,6 +899,7 @@ export class TypeScript extends LanguageContract {
     return {
       name: model.name,
       description: model.description,
+      deprecated: model.deprecated === true,
       kind: "zod",
       schemaExpression: expression,
       
@@ -1200,6 +1202,7 @@ export class TypeScript extends LanguageContract {
     return {
       name: enumType.name,
       description: enumType.description,
+      deprecated: enumType.deprecated === true,
       kind: "enum",
       schemaExpression: this.getZodExpression(enumType.type),
       values: values.map((value) => ({

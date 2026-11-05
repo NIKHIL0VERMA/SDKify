@@ -24,6 +24,7 @@ export function normalizeNamedTypes(
         typeof schema.description === "string"
           ? schema.description
           : undefined,
+      deprecated: schema.deprecated === true ? true : undefined,
       type: normalizeSchema(schema),
     });
   }

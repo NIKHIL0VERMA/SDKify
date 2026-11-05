@@ -39,6 +39,7 @@ export interface HttpAuth {
 export interface NamedType {
   name: string;
   description?: string;
+  deprecated?: boolean;
   type: TypeReference;
 }
 
@@ -62,6 +63,14 @@ export interface Operation {
 
   summary?: string;
   description?: string;
+
+  /**
+   * Tags declared on the operation. The first tag also determines the
+   * service the operation is grouped under.
+   */
+  tags: string[];
+
+  deprecated?: boolean;
 
   parameters: Parameter[];
 
