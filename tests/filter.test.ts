@@ -75,6 +75,30 @@ describe("filterSpecByTags", () => {
     expect(result.services[1]?.operations).toEqual([]);
   });
 
+  it("keeps operations carrying any included tag regardless of tag order", () => {
+    const result = filterSpecByTags(specWithServices(), {
+      includeTags: ["admin"],
+    });
+
+    expect(result.services[0]?.operations.map((entry) => entry.name)).toEqual([
+      "inviteUser",
+    ]);
+    expect(result.services[1]?.operations.map((entry) => entry.name)).toEqual([
+      "purgeCache",
+    ]);
+  });
+
+  it("removes operations carrying any of several excluded tags", () => {
+    const result = filterSpecByTags(specWithServices(), {
+      excludeTags: ["internal", "admin"],
+    });
+
+    expect(result.services[0]?.operations.map((entry) => entry.name)).toEqual([
+      "listUsers",
+    ]);
+    expect(result.services[1]?.operations).toEqual([]);
+  });
+
   it("preserves named types referenced by the remaining operations", () => {
     const result = filterSpecByTags(specWithServices(), {
       includeTags: ["users"],

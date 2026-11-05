@@ -55,14 +55,14 @@ function matchesTagFilter(
 
   if (
     includeTags.length > 0 &&
-    !includeTags.includes(tags[0] ?? "")
+    !tags.some((tag) => includeTags.includes(tag))
   ) {
     return false;
   }
 
   if (
     excludeTags.length > 0 &&
-    excludeTags.every((tag) => tags.includes(tag))
+    tags.some((tag) => excludeTags.includes(tag))
   ) {
     return false;
   }
