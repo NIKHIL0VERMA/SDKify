@@ -2,6 +2,7 @@
 import { parseOpenAPI } from "../parser/openapi.js";
 import { normalizeOpenAPI } from "../canonical/normalizer.js";
 import { SDKProject } from "../project/SDKProject.js";
+import { filterSpecByTags } from "../project/filter.js";
 import { Generator } from "../generator/generator.js";
 import { getTarget, getTargetNames } from "../targets/index.js";
 import path from "node:path";
@@ -11,6 +12,7 @@ function usage(): never {
 
 Usage:
   sdkify <spec> [--language <lang>] [--output <dir>] [--name <name>] [--version <version>]
+               [--tag <tags>] [--exclude-tag <tags>]
 
 Options:
   --spec, -s     Path to an OpenAPI specification (yaml/json) — also positional
@@ -18,6 +20,8 @@ Options:
   --output, -o   Output directory (default: generated)
   --name         SDK name override (default: spec title)
   --version      SDK version override (default: spec version)
+  --tag          Only generate operations with one of these tags (comma-separated)
+  --exclude-tag  Skip operations with any of these tags (comma-separated)
   --help, -h     Show this help
 `);
   process.exit(0);
@@ -33,6 +37,13 @@ function getFlag(args: string[], ...flags: string[]): string | undefined {
   }
 
   return undefined;
+}
+
+function getTags(
+  args: string[],
+  ...flags: string[]
+): string[] | undefined {
+  return getFlag(args, ...flags)?.split(",");
 }
 
 async function main() {
@@ -53,6 +64,8 @@ async function main() {
   const output = getFlag(args, "--output", "-o") ?? "generated";
   const name = getFlag(args, "--name");
   const version = getFlag(args, "--version");
+  const includeTags = getTags(args, "--tag");
+  const excludeTags = getTags(args, "--exclude-tag");
 
   if (!specPath) {
     console.error("Error: no specification provided");
@@ -60,7 +73,10 @@ async function main() {
   }
 
   const document = await parseOpenAPI(specPath);
-  const spec = normalizeOpenAPI(document);
+  const spec = filterSpecByTags(normalizeOpenAPI(document), {
+    includeTags,
+    excludeTags,
+  });
   const project = new SDKProject(spec);
   const languages = language ? [language] : getTargetNames();
 

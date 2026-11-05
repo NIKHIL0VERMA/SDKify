@@ -61,7 +61,8 @@ export function normalizeOpenAPI(
         );
       }
 
-      const serviceName = operation.tags?.[0] ?? "Default";
+      const operationTags = operation.tags ?? [];
+      const serviceName = operationTags[0] ?? "Default";
 
       let service = services.get(serviceName);
 
@@ -94,6 +95,9 @@ export function normalizeOpenAPI(
         path,
         summary: operation.summary,
         description: operation.description,
+        tags: operationTags,
+        deprecated:
+          operation.deprecated === true ? true : undefined,
         parameters,
         requestBody: normalizeRequestBody(
           operation.requestBody,

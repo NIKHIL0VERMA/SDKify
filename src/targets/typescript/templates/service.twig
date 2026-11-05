@@ -26,6 +26,9 @@ export class {{ className }} {
 {% elseif method.description %}
    * {{ method.description | firstLine }}
 {% endif %}
+{% if method.deprecated %}
+   * @deprecated
+{% endif %}
 {% for parameter in method.path %}
 {% if parameter.description %}
    * @param {{ parameter.name }} - {{ parameter.description | firstLine }}

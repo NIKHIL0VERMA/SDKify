@@ -1,3 +1,7 @@
+{% if method.deprecated %}
+> **Deprecated:** This operation is deprecated and may be removed in a future release.
+
+{% endif %}
 ```python
 {% set pkg = sdk.name | caseSnake %}
 {% set imports = method.docsImportNames | join(", ") %}

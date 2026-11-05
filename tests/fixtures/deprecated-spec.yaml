@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info:
+  title: Deprecation API
+  version: 1.0.0
+  description: Minimal spec exercising deprecation annotations.
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /legacy:
+    get:
+      operationId: getLegacy
+      summary: Fetch a legacy resource
+      tags: [Legacy]
+      deprecated: true
+      responses:
+        "200":
+          description: Legacy resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegacyResource"
+components:
+  schemas:
+    LegacyResource:
+      type: object
+      description: A resource that is going away.
+      deprecated: true
+      required:
+        - id
+      properties:
+        id:
+          type: string

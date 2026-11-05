@@ -24,6 +24,9 @@ from .{{ model.fileName }} import {{ model.name }}
 from ..input_file import InputFile
 
 {% endif %}
+{% if deprecated %}
+# Deprecated.
+{% endif %}
 {{ name }} = {{ pyType }}
 {% else %}
 from __future__ import annotations
@@ -53,10 +56,14 @@ import typing
 if typing.TYPE_CHECKING:
     from ..input_file import InputFile
 {% endif %}
-{% if description %}
+{% if description or deprecated %}
 
 class {{ name }}({% if parents is not empty %}{{ parents | join(", ") }}, {% endif %}BaseModel):
-    """{{ description | replace({'"""': "'''"}) }}"""
+{% if description %}
+    """{{ description | replace({'"""': "'''"}) }}{% if deprecated %} Deprecated.{% endif %}"""
+{% else %}
+    """Deprecated."""
+{% endif %}
 {% else %}
 
 class {{ name }}({% if parents is not empty %}{{ parents | join(", ") }}, {% endif %}BaseModel):

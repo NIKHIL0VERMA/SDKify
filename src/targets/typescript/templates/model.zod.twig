@@ -1,6 +1,11 @@
-{% if description %}
+{% if description or deprecated %}
 /**
+{% if description %}
  * {{ description }}
+{% endif %}
+{% if deprecated %}
+ * @deprecated
+{% endif %}
  */
 {% endif %}
 import { z } from "zod";

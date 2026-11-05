@@ -1,8 +1,13 @@
 import { z } from "zod";
-{% if description %}
+{% if description or deprecated %}
 
 /**
+{% if description %}
  * {{ description }}
+{% endif %}
+{% if deprecated %}
+ * @deprecated
+{% endif %}
  */
 {% endif %}
 export const {{ name }}Schema = {{ schemaExpression }};
